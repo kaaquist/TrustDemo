@@ -5,7 +5,8 @@ import json
 
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logging.basicConfig()
+logger.setLevel(logging.DEBUG)
 apikey = 'tiNFg9zDKRWXaIpI8pPyWbXd4ACa9ZDt'
 
 
@@ -25,12 +26,12 @@ def lambda_handler(event, context):
         resp = urllib2.urlopen(req).read()
         response = json.loads(resp)
         buisnessUId = response['id']
-        print (buisnessUId)
+        logger.debug(buisnessUId)
         sreviewurl = r"https://api.trustpilot.com/v1/business-units/{0}/reviews?apikey={1}"
         reviewurl = sreviewurl.format(buisnessUId, apikey)
         reviewstr = urllib2.urlopen(reviewurl).read()
         d = json.loads(reviewstr)
-        print (d['reviews'])
+        logger.debug(d['reviews'])
         persons = 0
         ratingsum = 0
         for n in d['reviews']:
