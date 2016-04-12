@@ -16,18 +16,19 @@ def lambda_handler(event, context):
     :return: json
     """
     try:
-        logger.info("Test: " + str(event))
-        company = event['Domain']
-        logger.info('Company=' + company)
+        domain = event['Domain']
+        logger.debug('Domain=' + domain)
 
         sfindurl = r"https://api.trustpilot.com/v1/business-units/find?name={0}"
-        req = urllib2.Request(sfindurl.format(company))
+        sreviewurl = r"https://api.trustpilot.com/v1/business-units/{0}/reviews?apikey={1}"
+
+        req = urllib2.Request(sfindurl.format(domain))
         req.add_header('ApiKey', apikey)
         resp = urllib2.urlopen(req).read()
         response = json.loads(resp)
         buisnessUId = response['id']
         logger.debug(buisnessUId)
-        sreviewurl = r"https://api.trustpilot.com/v1/business-units/{0}/reviews?apikey={1}"
+
         reviewurl = sreviewurl.format(buisnessUId, apikey)
         reviewstr = urllib2.urlopen(reviewurl).read()
         d = json.loads(reviewstr)
@@ -39,7 +40,7 @@ def lambda_handler(event, context):
             ratingsum += int((n['stars']))
         rating = (float(ratingsum/float(persons)))
 
-        return {"Result": "Successfully", "Domain": company, "RatingReslut": rating}
+        return {"Result": "Successfully", "Domain": domain, "RatingReslut": {"Ratings": persons, "Average": rating}}
     except Exception as e:
         logger.error("!!!! -- CRITICAL ERROR -- !!!! := " + str(e.message))
         return {"Result": "Error", "Domain": "unknown", "RatingReslut": 0.0}
