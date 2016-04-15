@@ -24,16 +24,19 @@ def getAPIdata(_url):
     return json.loads(resp)
 
 
-def whatAgeisReview(_reviewdate):
+def whatAgeisReview(_reviewdate, _rate):
     newreviewdate = datetime.strptime(_reviewdate.split('T')[0], "%Y-%m-%d")
     now = datetime.now().date()
 
-    if newreviewdate.date() > (now - timedelta(days=100)):
-        return 1
-    elif newreviewdate.date() < (now - timedelta(days=100)) and newreviewdate.date() > (now - timedelta(days=400)):
-        return 1.05
+    if _rate != 5:
+        if newreviewdate.date() > (now - timedelta(days=100)):
+            return 1
+        elif newreviewdate.date() < (now - timedelta(days=100)) and newreviewdate.date() > (now - timedelta(days=400)):
+            return 1.05
+        else:
+            return 1.10
     else:
-        return 1.10
+        return 1
 
 
 def lambda_handler(event, context):
@@ -66,7 +69,7 @@ def lambda_handler(event, context):
             for review in reviews['reviews']:
                 persons += 1
                 logger.debug(review['createdAt'])
-                ageingfacter = whatAgeisReview(review['createdAt'])
+                ageingfacter = whatAgeisReview(review['createdAt'], int(review['stars']))
                 logging.debug(str(float(review['stars']) * float(ageingfacter)) + '  !!  ' + str(ageingfacter))
                 ratingsum += (float(review['stars']) * float(ageingfacter))
             rating = (float(ratingsum/float(persons)))
@@ -77,6 +80,6 @@ def lambda_handler(event, context):
 
 
 if __name__ == '__main__':
-    _event = {"Domain": "www.bookings.com"}
+    _event = {"Domain": "www.endomondo.com"}
     test = lambda_handler(_event, None)
     print (test)
