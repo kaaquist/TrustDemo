@@ -1,7 +1,9 @@
 from __future__ import print_function
+from datetime import datetime, timedelta, time
 import logging
 import urllib2
 import json
+
 
 
 logger = logging.getLogger()
@@ -22,6 +24,21 @@ def getAPIdata(_url):
     return json.loads(resp)
 
 
+def whatAgeisReview(_reviewdate, _rate):
+    newreviewdate = datetime.strptime(_reviewdate.split('T')[0], "%Y-%m-%d")
+    now = datetime.now().date()
+
+    if _rate != 5:
+        if newreviewdate.date() > (now - timedelta(days=100)):
+            return 1
+        elif newreviewdate.date() < (now - timedelta(days=100)) and newreviewdate.date() > (now - timedelta(days=400)):
+            return 1.05
+        else:
+            return 1.10
+    else:
+        return 1
+
+
 def lambda_handler(event, context):
     """
     Event handler used for AWS Lambda service.
@@ -40,7 +57,7 @@ def lambda_handler(event, context):
         logger.debug(buisnessUId)
 
         persons = 0
-        ratingsum = 0
+        ratingsum = 0.0
         # Each request returns 20 reviews per. page. We need at the most 300.
         for x in range(1, 16):
             reviews = getAPIdata(sreviewurl.format(buisnessUId, x))
@@ -51,15 +68,18 @@ def lambda_handler(event, context):
 
             for review in reviews['reviews']:
                 persons += 1
-                ratingsum += int((review['stars']))
+                logger.debug(review['createdAt'])
+                ageingfacter = whatAgeisReview(review['createdAt'], int(review['stars']))
+                logging.debug(str(float(review['stars']) * float(ageingfacter)) + '  !!  ' + str(ageingfacter))
+                ratingsum += (float(review['stars']) * float(ageingfacter))
             rating = (float(ratingsum/float(persons)))
-        return {"Result": "Successfully", "Domain": domain, "RatingReslut": {"Ratings": persons, "Average": rating}}
+        return {"Result": "Successfully", "Domain": domain, "RatingResult": {"Ratings": persons, "Average": rating}}
     except Exception as e:
         logger.error("!!!! -- CRITICAL ERROR -- !!!! := " + str(e.message))
-        return {"Result": "Error", "Domain": "unknown", "RatingReslut": 0.0}
+        return {"Result": "Error", "Domain": "unknown", "RatingResult": 0.0}
 
 
 if __name__ == '__main__':
-    _event = {"Domain": "www.bookings.com"}
+    _event = {"Domain": "www.endomondo.com"}
     test = lambda_handler(_event, None)
     print (test)
